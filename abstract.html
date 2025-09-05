@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Интерактивный конспект по метрикам AI/ML</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <!-- Chosen Palette: Warm Neutrals -->
+    <!-- Application Structure Plan: A single-page application using a fixed sidebar for primary AI domains (CV, NLP, etc.) and horizontal tabs for sub-tasks (Classification, Segmentation). This hierarchical structure provides clear, intuitive navigation through the dense technical content. The main content area dynamically updates, focusing the user's attention. Interactive calculators and visualizers are embedded directly with metric definitions to transform passive reading into active learning, reinforcing understanding of how metrics respond to changing inputs. This is more effective for learning than a static, linear document. -->
+    <!-- Visualization & Content Choices: Classification: Interactive confusion matrix calculator (HTML/JS) updates a Chart.js bar chart for key metrics (Accuracy, Precision, etc.) to show direct cause-and-effect. Goal: Compare/Inform. Regression: Interactive Chart.js scatter plot allows users to see how MSE/RMSE change with data fit. Goal: Change/Relationships. Segmentation: A simple div-based visualizer with a slider dynamically calculates and displays IoU. Goal: Inform/Relationships. Generative/Complex Metrics (FID, BLEU): Presented with clear text explanations and static examples, as they are not easily interactive. Goal: Inform. All visualizations use Canvas via Chart.js or pure HTML/CSS to avoid SVG/Mermaid. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .math-formula {
+            font-size: 1.1rem;
+            margin: 1rem 0;
+            text-align: center;
+            overflow-x: auto;
+            padding: 0.5rem;
+        }
+        .nav-link {
+            transition: all 0.2s ease-in-out;
+        }
+        .nav-link.active {
+            background-color: #0891b2;
+            color: white;
+            transform: translateX(4px);
+        }
+        .tab-link.active {
+            border-color: #0891b2;
+            color: #0891b2;
+            background-color: #f0f9ff;
+        }
+        .content-section, .tab-content {
+            display: none;
+        }
+        .content-section.active, .tab-content.active {
+            display: block;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+         @media (min-width: 768px) { .chart-container { height: 350px; } }
+    </style>
+</head>
+<body class="bg-stone-50 text-slate-800">
+
+    <div class="flex min-h-screen">
+        <aside class="w-64 bg-white shadow-md p-4 space-y-2 fixed top-0 left-0 h-full flex flex-col">
+            <h1 class="text-xl font-bold text-cyan-700 mb-4">Метрики AI/ML</h1>
+            <nav class="flex flex-col space-y-2">
+                <a href="#intro" data-target="intro" class="nav-link p-2 rounded-lg hover:bg-cyan-50 active">Введение</a>
+                <a href="#cv" data-target="cv" class="nav-link p-2 rounded-lg hover:bg-cyan-50">Компьютерное зрение</a>
+                <a href="#speech" data-target="speech" class="nav-link p-2 rounded-lg hover:bg-cyan-50">Распознавание и синтез речи</a>
+                <a href="#nlp" data-target="nlp" class="nav-link p-2 rounded-lg hover:bg-cyan-50">Обработка языка (NLP)</a>
+                <a href="#decision" data-target="decision" class="nav-link p-2 rounded-lg hover:bg-cyan-50">Поддержка принятия решений</a>
+            </nav>
+        </aside>
+
+        <main class="ml-64 p-8 w-full">
+            <div id="intro" class="content-section active">
+                 <h2 class="text-3xl font-bold text-slate-700 mb-4">Оценка качества моделей машинного обучения</h2>
+                <p class="text-lg text-slate-600">
+                    Добро пожаловать в интерактивный конспект по метрикам оценки качества моделей ИИ. Выбор правильной метрики — ключевой шаг в процессе разработки модели, так как он определяет, насколько хорошо модель решает поставленную задачу. Здесь мы рассмотрим основные метрики, используемые в различных областях машинного обучения, от компьютерного зрения до анализа текстов. Используйте навигацию слева для перемещения по разделам.
+                </p>
+                <div class="mt-8 p-6 bg-white rounded-xl shadow-lg border border-cyan-100">
+                    <h3 class="text-2xl font-semibold mb-3">Как пользоваться конспектом?</h3>
+                    <p class="mb-4">Каждый раздел посвящен определенной области ИИ. Внутри вы найдете подразделы с описанием конкретных задач и соответствующих им метрик. Многие метрики снабжены интерактивными элементами: вы можете изменять входные данные и наблюдать, как меняется результат. Это поможет вам глубже понять суть каждой метрики.</p>
+                    <p class="font-medium text-cyan-700">Начните с выбора интересующей вас области в меню слева.</p>
+                </div>
+            </div>
+
+            <div id="cv" class="content-section">
+                <h2 class="text-3xl font-bold mb-4">Компьютерное зрение</h2>
+                <div class="border-b border-gray-200 mb-4">
+                    <nav class="-mb-px flex space-x-4" aria-label="Tabs">
+                        <a href="#" data-tab="cv-classification" class="tab-link active border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Классификация</a>
+                        <a href="#" data-tab="cv-segmentation" class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Сегментация и детекция</a>
+                        <a href="#" data-tab="cv-generation" class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Генерация изображений</a>
+                    </nav>
+                </div>
+                
+                <div id="cv-classification" class="tab-content active">
+                    <h3 class="text-2xl font-semibold mb-3">Классификация изображений</h3>
+                    <p class="mb-6">Задача классификации заключается в отнесении изображения к одному из заранее определенных классов. Для оценки используются метрики, основанные на матрице ошибок (Confusion Matrix).</p>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <h4 class="text-xl font-bold mb-2">Матрица ошибок (Confusion Matrix)</h4>
+                            <p>Это таблица, которая показывает производительность алгоритма классификации. Каждая строка представляет экземпляры в предсказанном классе, а каждый столбец - в фактическом классе.</p>
+                            <ul class="list-disc list-inside mt-2 space-y-1">
+                                <li><b>TP (True Positive):</b> Истинно-положительные. Модель правильно предсказала позитивный класс.</li>
+                                <li><b>TN (True Negative):</b> Истинно-отрицательные. Модель правильно предсказала негативный класс.</li>
+                                <li><b>FP (False Positive):</b> Ложно-положительные (Ошибка I рода). Модель предсказала позитивный класс, но он негативный.</li>
+                                <li><b>FN (False Negative):</b> Ложно-отрицательные (Ошибка II рода). Модель предсказала негативный класс, но он позитивный.</li>
+                            </ul>
+                            <div class="mt-4 grid grid-cols-2 gap-4">
+                                <div><label>TP: <input type="number" id="cm-tp" value="85" class="w-full p-2 border rounded"></label></div>
+                                <div><label>TN: <input type="number" id="cm-tn" value="5" class="w-full p-2 border rounded"></label></div>
+                                <div><label>FP: <input type="number" id="cm-fp" value="2" class="w-full p-2 border rounded"></label></div>
+                                <div><label>FN: <input type="number" id="cm-fn" value="8" class="w-full p-2 border rounded"></label></div>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                            <h4 class="text-xl font-bold mb-2">Интерактивный расчет метрик</h4>
+                            <p>Введите значения TP, TN, FP, FN и посмотрите, как изменятся основные метрики классификации.</p>
+                            <div class="mt-4 space-y-2 font-mono">
+                                <p>Accuracy: <span id="res-accuracy" class="font-bold text-cyan-600"></span></p>
+                                <p>Precision: <span id="res-precision" class="font-bold text-cyan-600"></span></p>
+                                <p>Recall (Sensitivity): <span id="res-recall" class="font-bold text-cyan-600"></span></p>
+                                <p>F1-Score: <span id="res-f1" class="font-bold text-cyan-600"></span></p>
+                            </div>
+                            <div class="chart-container mt-4">
+                                <canvas id="metricsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-white p-6 rounded-xl shadow-lg mt-6">
+                         <h4 class="text-xl font-bold mb-2">Формулы метрик</h4>
+                         <div class="grid md:grid-cols-2 gap-x-8 gap-y-4">
+                            <div><b>Accuracy</b> (Точность): Доля правильных ответов. <div class="math-formula">$$ Accuracy = \frac{TP + TN}{TP + TN + FP + FN} $$</div></div>
+                            <div><b>Precision</b> (Точность предсказания): Какая доля объектов, названных классификатором положительными, действительно являются положительными. <div class="math-formula">$$ Precision = \frac{TP}{TP + FP} $$</div></div>
+                            <div><b>Recall</b> (Полнота): Какую долю объектов положительного класса из всех объектов положительного класса нашел алгоритм. <div class="math-formula">$$ Recall = \frac{TP}{TP + FN} $$</div></div>
+                            <div><b>F1-Score</b>: Среднее гармоническое между Precision и Recall. <div class="math-formula">$$ F1 = 2 \cdot \frac{Precision \cdot Recall}{Precision + Recall} $$</div></div>
+                         </div>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-lg mt-6">
+                        <h4 class="text-xl font-bold mb-2">Открытые датасеты</h4>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li><a href="http://www.image-net.org/" target="_blank" class="text-cyan-600 hover:underline">ImageNet</a>: Огромный датасет для классификации на 1000 классов.</li>
+                            <li><a href="https://www.cs.toronto.edu/~kriz/cifar.html" target="_blank" class="text-cyan-600 hover:underline">CIFAR-10 / CIFAR-100</a>: Наборы из 60000 изображений 32x32, разделенных на 10 или 100 классов.</li>
+                            <li><a href="http://yann.lecun.com/exdb/mnist/" target="_blank" class="text-cyan-600 hover:underline">MNIST</a>: Датасет рукописных цифр. Классический "Hello, World!" в компьютерном зрении.</li>
+                        </ul>
+                    </div>
+
+                </div>
+                
+                <div id="cv-segmentation" class="tab-content">
+                    <h3 class="text-2xl font-semibold mb-3">Сегментация и Детекция</h3>
+                    <p class="mb-6">В задачах детекции и сегментации мы не только классифицируем, но и определяем точное местоположение объекта. Ключевой метрикой здесь является IoU.</p>
+                    
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-xl shadow-lg">
+                             <h4 class="text-xl font-bold mb-2">Intersection over Union (IoU)</h4>
+                             <p>Также известный как индекс Жаккара, IoU измеряет степень пересечения между предсказанной областью (bounding box/mask) и истинной областью.</p>
+                             <div class="math-formula">$$ IoU(A, B) = \frac{|A \cap B|}{|A \cup B|} = \frac{Area\ of\ Overlap}{Area\ of\ Union} $$</div>
+                             <p>Значение IoU варьируется от 0 (нет пересечения) до 1 (полное совпадение).</p>
+                             <div class="mt-4">
+                                <label for="iou-slider" class="block mb-2 text-sm font-medium">Пересечение областей:</label>
+                                <input id="iou-slider" type="range" min="0" max="100" value="75" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                                <p class="text-center mt-2 font-mono text-lg">IoU: <span id="iou-value" class="font-bold text-cyan-600">0.75</span></p>
+                             </div>
+                        </div>
+                        <div class="bg-white p-6 rounded-xl shadow-lg flex items-center justify-center">
+                            <div id="iou-visual" class="relative w-64 h-64">
+                                <div id="iou-box-gt" class="absolute bg-blue-500 bg-opacity-40 border-2 border-blue-700" style="width: 150px; height: 150px; top: 50px; left: 50px;">
+                                    <span class="absolute -top-6 left-0 text-blue-700 font-semibold">Ground Truth</span>
+                                </div>
+                                <div id="iou-box-pred" class="absolute bg-red-500 bg-opacity-40 border-2 border-red-700" style="width: 150px; height: 150px; top: 50px; left: 87.5px;">
+                                    <span class="absolute -bottom-6 right-0 text-red-700 font-semibold">Prediction</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="bg-white p-6 rounded-xl shadow-lg mt-6">
+                        <h4 class="text-xl font-bold mb-2">Другие метрики</h4>
+                        <ul class="list-disc list-inside space-y-2">
+                           <li><b>mAP (mean Average Precision):</b> Усредненная точность по всем классам и по разным порогам IoU. Стандартная метрика для задач детекции объектов.</li>
+                           <li><b>Dice Coefficient:</b> Очень похож на IoU, часто используется в медицинской сегментации. <span class="math-formula" style="display:inline;">$$ Dice = \frac{2 \cdot |A \cap B|}{|A| + |B|} $$</span></li>
+                        </ul>
+                    </div>
+                     <div class="bg-white p-6 rounded-xl shadow-lg mt-6">
+                        <h4 class="text-xl font-bold mb-2">Открытые датасеты</h4>
+                        <ul class="list-disc list-inside space-y-1">
+                            <li><a href="https://cocodataset.org/" target="_blank" class="text-cyan-600 hover:underline">COCO (Common Objects in Context)</a>: Масштабный датасет для детекции, сегментации и распознавания объектов.</li>
+                            <li><a href="http://host.robots.ox.ac.uk/pascal/VOC/" target="_blank" class="text-cyan-600 hover:underline">Pascal VOC</a>: Один из наиболее влиятельных датасетов в области компьютерного зрения.</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div id="cv-generation" class="tab-content">
+                    <h3 class="text-2xl font-semibold mb-3">Генерация изображений</h3>
+                    <p class="mb-6">Оценка качества сгенерированных изображений (например, GAN) — сложная задача, так как "хорошее" изображение субъективно. Метрики пытаются оценить реалистичность и разнообразие.</p>
+                     <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h4 class="text-xl font-bold mb-2">Основные метрики</h4>
+                        <ul class="list-disc list-inside space-y-3">
+                           <li><b>IS (Inception Score):</b> Измеряет, насколько разнообразны и осмысленны сгенерированные изображения. Использует предварительно обученную модель Inception v3. Более высокий IS лучше. Он оценивает, насколько уверенно классификатор определяет класс объекта на картинке (осмысленность) и насколько разнообразны эти классы (разнообразие).</li>
+                           <li><b>FID (Fréchet Inception Distance):</b> Сравнивает распределение сгенерированных изображений с распределением реальных изображений в пространстве признаков модели Inception v3. FID более устойчив и лучше коррелирует с человеческой оценкой, чем IS. <b>Более низкий FID лучше.</b>
+                           <div class="math-formula">$$ FID(x, g) = ||\mu_x - \mu_g||^2_2 + Tr(\Sigma_x + \Sigma_g - 2(\Sigma_x \Sigma_g)^{1/2}) $$</div>
+                           Где \(x\) и \(g\) — реальные и сгенерированные данные, \(\mu\) — среднее, а \(\Sigma\) — ковариационная матрица.</li>
+                        </ul>
+                    </div>
+                     <div class="bg-white p-6 rounded-xl shadow-lg mt-6">
+                        <h4 class="text-xl font-bold mb-2">Открытые датасеты</h4>
+                        <p>Для генеративных моделей обычно используются те же датасеты, что и для классификации, но в качестве источника реальных изображений для сравнения.</p>
+                        <ul class="list-disc list-inside space-y-1 mt-2">
+                            <li><a href="http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html" target="_blank" class="text-cyan-600 hover:underline">CelebA</a>: Датасет с более чем 200 тыс. изображений лиц знаменитостей.</li>
+                            <li><a href="https://www.churchofjesuschrist.org/study/scriptures/gs/bed?lang=eng" target="_blank" class="text-cyan-600 hover:underline">LSUN (Large-scale Scene Understanding)</a>: Датасет с миллионами изображений различных сцен и интерьеров.</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+
+            <div id="speech" class="content-section">
+                <h2 class="text-3xl font-bold mb-4">Распознавание и синтез речи</h2>
+                 <p class="mb-6">Оценка качества систем, работающих с речью, требует специфических метрик, учитывающих последовательную природу данных.</p>
+                 <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-2xl font-semibold mb-3">Распознавание речи (ASR - Automatic Speech Recognition)</h3>
+                    <ul class="list-disc list-inside space-y-2">
+                        <li><b>WER (Word Error Rate):</b> Самая распространенная метрика. Измеряет количество ошибок (замен, удалений, вставок) на уровне слов. <b>Чем ниже WER, тем лучше.</b>
+                        <div class="math-formula">$$ WER = \frac{S + D + I}{N} $$</div>
+                        Где \(S\) – замены (Substitutions), \(D\) – удаления (Deletions), \(I\) – вставки (Insertions), \(N\) – общее количество слов в эталонной транскрипции.
+                        </li>
+                        <li><b>CER (Character Error Rate):</b> Аналогично WER, но на уровне символов. Важно для языков, где слова сложно выделить (например, китайский).</li>
+                    </ul>
+                 </div>
+                 <div class="bg-white p-6 rounded-xl shadow-lg mt-6">
+                    <h3 class="text-2xl font-semibold mb-3">Синтез речи (TTS - Text-to-Speech)</h3>
+                    <p>Оценка синтезированной речи в основном субъективна.</p>
+                     <ul class="list-disc list-inside space-y-2">
+                        <li><b>MOS (Mean Opinion Score):</b> "Золотой стандарт" оценки. Группе людей (асессоров) предлагается оценить качество синтезированной речи по шкале от 1 (плохо) до 5 (отлично). Результаты усредняются.</li>
+                        <li>Объективные метрики (например, сравнение спектрограмм) существуют, но они слабо коррелируют с человеческим восприятием.</li>
+                    </ul>
+                 </div>
+                 <div class="bg-white p-6 rounded-xl shadow-lg mt-6">
+                    <h4 class="text-xl font-bold mb-2">Открытые датасеты</h4>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li><a href="https://www.openslr.org/12" target="_blank" class="text-cyan-600 hover:underline">LibriSpeech</a>: Большой корпус (около 1000 часов) англоязычной речи из аудиокниг.</li>
+                        <li><a href="https://commonvoice.mozilla.org/" target="_blank" class="text-cyan-600 hover:underline">Mozilla Common Voice</a>: Огромный, постоянно растущий многоязычный датасет, собранный волонтерами.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="nlp" class="content-section">
+                <h2 class="text-3xl font-bold mb-4">Обработка естественного языка (NLP)</h2>
+                <div class="border-b border-gray-200 mb-4">
+                    <nav class="-mb-px flex space-x-4" aria-label="Tabs">
+                        <a href="#" data-tab="nlp-classification" class="tab-link active border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Классификация и понимание</a>
+                        <a href="#" data-tab="nlp-generation" class="tab-link border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">Генерация текста</a>
+                    </nav>
+                </div>
+                <div id="nlp-classification" class="tab-content active">
+                    <h3 class="text-2xl font-semibold mb-3">Классификация и понимание текста</h3>
+                    <p class="mb-4">Для задач классификации текста (например, анализ тональности) применяются те же метрики, что и в компьютерном зрении: <b>Accuracy, Precision, Recall, F1-Score</b>.</p>
+                    <p>Для задач оценки понимания смысла (например, семантическая близость) используются метрики, сравнивающие векторы (эмбеддинги) текстов.</p>
+                    <div class="bg-white p-6 rounded-xl shadow-lg mt-4">
+                        <h4 class="text-xl font-bold mb-2">Метрики для эмбеддингов</h4>
+                        <ul class="list-disc list-inside space-y-2">
+                           <li><b>Cosine Similarity (Косинусное сходство):</b> Измеряет косинус угла между двумя векторами в многомерном пространстве. Значение от -1 (противоположные) до 1 (одинаковые). 0 означает ортогональность (независимость).
+                           <div class="math-formula">$$ similarity = \cos(\theta) = \frac{A \cdot B}{||A|| \ ||B||} $$</div>
+                           </li>
+                        </ul>
+                    </div>
+                </div>
+                 <div id="nlp-generation" class="tab-content">
+                    <h3 class="text-2xl font-semibold mb-3">Генерация текста</h3>
+                    <p class="mb-4">Оценка задач, таких как машинный перевод или саммаризация, основана на сравнении сгенерированного текста с одним или несколькими эталонными текстами.</p>
+                     <div class="bg-white p-6 rounded-xl shadow-lg">
+                        <h4 class="text-xl font-bold mb-2">Основные метрики</h4>
+                        <ul class="list-disc list-inside space-y-2">
+                           <li><b>BLEU (Bilingual Evaluation Understudy):</b> Измеряет, сколько n-граммов (последовательностей из n слов) из сгенерированного текста встречается в эталонных. Штрафует за слишком короткие предложения. Широко используется в машинном переводе.</li>
+                           <li><b>ROUGE (Recall-Oriented Understudy for Gisting Evaluation):</b> Похож на BLEU, но основан на полноте (Recall). Сравнивает n-граммы из эталонного текста с n-граммами в сгенерированном. Часто используется для оценки саммаризации.</li>
+                            <li><b>Perplexity (Перплексия):</b> Метрика, обратная вероятности тестовой выборки, нормализованная по количеству слов. Интуитивно, она измеряет, насколько хорошо языковая модель "удивлена" новым текстом. <b>Чем ниже перплексия, тем лучше модель предсказывает последовательность слов.</b></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg mt-6">
+                    <h4 class="text-xl font-bold mb-2">Открытые датасеты и бенчмарки</h4>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li><a href="https://gluebenchmark.com/" target="_blank" class="text-cyan-600 hover:underline">GLUE Benchmark</a>: Набор из девяти задач на понимание языка для оценки производительности моделей.</li>
+                         <li><a href="https://huggingface.co/datasets" target="_blank" class="text-cyan-600 hover:underline">Hugging Face Datasets</a>: Огромная библиотека с тысячами датасетов для различных NLP-задач.</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div id="decision" class="content-section">
+                 <h2 class="text-3xl font-bold mb-4">Поддержка принятия решений</h2>
+                 <p class="mb-6">Этот раздел охватывает задачи, где модель предсказывает числовое значение (регрессия) или помогает найти оптимальное решение.</p>
+                 <div class="bg-white p-6 rounded-xl shadow-lg">
+                    <h3 class="text-2xl font-semibold mb-3">Задачи регрессии</h3>
+                    <p class="mb-4">Цель регрессии — предсказать непрерывное значение (например, цену дома, температуру). Метрики оценивают величину ошибки предсказания.</p>
+                    <div class="grid md:grid-cols-2 gap-6 items-center">
+                        <div>
+                             <ul class="list-disc list-inside space-y-2">
+                                <li><b>MSE (Mean Squared Error):</b> Среднеквадратичная ошибка. Сильно штрафует за большие ошибки.
+                                <div class="math-formula">$$ MSE = \frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2 $$</div>
+                                </li>
+                                <li><b>RMSE (Root Mean Squared Error):</b> Корень из MSE. Имеет ту же размерность, что и целевая переменная, что делает его более интерпретируемым.
+                                <div class="math-formula">$$ RMSE = \sqrt{MSE} $$</div>
+                                </li>
+                                 <li><b>MAE (Mean Absolute Error):</b> Средняя абсолютная ошибка. Менее чувствительна к выбросам, чем MSE.
+                                <div class="math-formula">$$ MAE = \frac{1}{n} \sum_{i=1}^{n} |y_i - \hat{y}_i| $$</div>
+                                </li>
+                                <li><b>R² (Коэффициент детерминации):</b> Показывает, какую долю дисперсии зависимой переменной можно объяснить с помощью модели. Значение от 0 до 1. <b>Чем ближе к 1, тем лучше.</b></li>
+                            </ul>
+                        </div>
+                        <div>
+                            <div class="chart-container">
+                                <canvas id="regressionChart"></canvas>
+                            </div>
+                            <div class="mt-4 text-center">
+                                <button id="regression-btn" class="bg-cyan-600 text-white px-4 py-2 rounded-lg hover:bg-cyan-700">Увеличить разброс данных</button>
+                                <div class="mt-2 font-mono text-sm">
+                                    <p>RMSE: <span id="res-rmse" class="font-bold"></span> | R²: <span id="res-r2" class="font-bold"></span></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-xl shadow-lg mt-6">
+                    <h3 class="text-2xl font-semibold mb-3">Задачи оптимизации</h3>
+                    <p>Здесь метрикой является сама <b>целевая функция (objective function)</b>, которую мы пытаемся минимизировать или максимизировать. Например, в задаче коммивояжера это будет длина пройденного пути, а в задаче распределения ресурсов — итоговая прибыль.</p>
+                </div>
+                 <div class="bg-white p-6 rounded-xl shadow-lg mt-6">
+                    <h4 class="text-xl font-bold mb-2">Открытые датасеты</h4>
+                    <ul class="list-disc list-inside space-y-1">
+                        <li><a href="https://archive.ics.uci.edu/ml/index.php" target="_blank" class="text-cyan-600 hover:underline">UCI Machine Learning Repository</a>: Классический источник датасетов для регрессии и других задач.</li>
+                        <li><a href="https://www.kaggle.com/datasets" target="_blank" class="text-cyan-600 hover:underline">Kaggle Datasets</a>: Платформа с огромным количеством датасетов для соревнований и исследований.</li>
+                    </ul>
+                </div>
+            </div>
+        </main>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const navLinks = document.querySelectorAll('.nav-link');
+    const contentSections = document.querySelectorAll('.content-section');
+    const tabLinks = document.querySelectorAll('.tab-link');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    function switchContent(targetId) {
+        navLinks.forEach(link => {
+            if (link.dataset.target === targetId) {
+                link.classList.add('active');
+            } else {
+                link.classList.remove('active');
+            }
+        });
+        contentSections.forEach(section => {
+            if (section.id === targetId) {
+                section.classList.add('active');
+            } else {
+                section.classList.remove('active');
+            }
+        });
+        window.location.hash = targetId;
+    }
+
+    navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetId = e.currentTarget.dataset.target;
+            switchContent(targetId);
+        });
+    });
+
+    const initialHash = window.location.hash.substring(1);
+    if (initialHash) {
+        switchContent(initialHash);
+    }
+
+    tabLinks.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            e.preventDefault();
+            const targetTab = e.currentTarget.dataset.tab;
+            const parent = e.currentTarget.closest('.content-section');
+            
+            parent.querySelectorAll('.tab-link').forEach(t => t.classList.remove('active'));
+            e.currentTarget.classList.add('active');
+            
+            parent.querySelectorAll('.tab-content').forEach(content => {
+                if (content.id === targetTab) {
+                    content.classList.add('active');
+                } else {
+                    content.classList.remove('active');
+                }
+            });
+        });
+    });
+
+    let metricsChart;
+    const cmInputs = ['cm-tp', 'cm-tn', 'cm-fp', 'cm-fn'].map(id => document.getElementById(id));
+
+    function calculateMetrics() {
+        const tp = parseFloat(document.getElementById('cm-tp').value) || 0;
+        const tn = parseFloat(document.getElementById('cm-tn').value) || 0;
+        const fp = parseFloat(document.getElementById('cm-fp').value) || 0;
+        const fn = parseFloat(document.getElementById('cm-fn').value) || 0;
+
+        const total = tp + tn + fp + fn;
+        const accuracy = total > 0 ? (tp + tn) / total : 0;
+        const precision = (tp + fp) > 0 ? tp / (tp + fp) : 0;
+        const recall = (tp + fn) > 0 ? tp / (tp + fn) : 0;
+        const f1 = (precision + recall) > 0 ? 2 * (precision * recall) / (precision + recall) : 0;
+
+        document.getElementById('res-accuracy').textContent = accuracy.toFixed(3);
+        document.getElementById('res-precision').textContent = precision.toFixed(3);
+        document.getElementById('res-recall').textContent = recall.toFixed(3);
+        document.getElementById('res-f1').textContent = f1.toFixed(3);
+
+        updateMetricsChart([accuracy, precision, recall, f1]);
+    }
+
+    function updateMetricsChart(data) {
+        const ctx = document.getElementById('metricsChart').getContext('2d');
+        if (metricsChart) {
+            metricsChart.data.datasets[0].data = data;
+            metricsChart.update();
+        } else {
+            metricsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Accuracy', 'Precision', 'Recall', 'F1-Score'],
+                    datasets: [{
+                        label: 'Значение метрики',
+                        data: data,
+                        backgroundColor: ['#22d3ee', '#06b6d4', '#0891b2', '#0e7490'],
+                        borderColor: '#0284c7',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 1.0
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    cmInputs.forEach(input => input.addEventListener('input', calculateMetrics));
+    calculateMetrics();
+
+
+    const iouSlider = document.getElementById('iou-slider');
+    const iouValue = document.getElementById('iou-value');
+    const iouBoxPred = document.getElementById('iou-box-pred');
+    const gtBox = { x: 50, y: 50, w: 150, h: 150 };
+
+    iouSlider.addEventListener('input', (e) => {
+        const overlapPercentage = e.target.value / 100;
+        
+        const predBoxW = gtBox.w;
+        const predBoxH = gtBox.h;
+        
+        const maxOffset = gtBox.w;
+        const currentOffset = maxOffset * (1 - overlapPercentage);
+        
+        const predBoxX = gtBox.x + currentOffset;
+        const predBoxY = gtBox.y;
+        
+        iouBoxPred.style.left = `${predBoxX}px`;
+        iouBoxPred.style.top = `${predBoxY}px`;
+        iouBoxPred.style.width = `${predBoxW}px`;
+        iouBoxPred.style.height = `${predBoxH}px`;
+        
+        const intersectionX1 = Math.max(gtBox.x, predBoxX);
+        const intersectionY1 = Math.max(gtBox.y, predBoxY);
+        const intersectionX2 = Math.min(gtBox.x + gtBox.w, predBoxX + predBoxW);
+        const intersectionY2 = Math.min(gtBox.y + gtBox.h, predBoxY + predBoxH);
+
+        const intersectionArea = Math.max(0, intersectionX2 - intersectionX1) * Math.max(0, intersectionY2 - intersectionY1);
+        const gtArea = gtBox.w * gtBox.h;
+        const predArea = predBoxW * predBoxH;
+        const unionArea = gtArea + predArea - intersectionArea;
+
+        const iou = unionArea > 0 ? intersectionArea / unionArea : 0;
+        iouValue.textContent = iou.toFixed(2);
+    });
+    iouSlider.dispatchEvent(new Event('input'));
+
+    let regressionChart;
+    let regressionNoise = 0.5;
+    const regressionBtn = document.getElementById('regression-btn');
+    const rmseEl = document.getElementById('res-rmse');
+    const r2El = document.getElementById('res-r2');
+
+    function generateRegressionData(noise) {
+        const data = [];
+        let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+        for (let i = 0; i < 30; i++) {
+            const x = i;
+            const y = 0.5 * x + 2 + (Math.random() - 0.5) * noise * 10;
+            data.push({x, y});
+            sumX += x;
+            sumY += y;
+            sumXY += x * y;
+            sumX2 += x * x;
+        }
+        const n = data.length;
+        const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+        const intercept = (sumY - slope * sumX) / n;
+        
+        const line = data.map(p => ({x: p.x, y: slope * p.x + intercept}));
+        
+        let sse = 0;
+        let sst = 0;
+        const yMean = sumY / n;
+        data.forEach((p, index) => {
+            sse += Math.pow(p.y - line[index].y, 2);
+            sst += Math.pow(p.y - yMean, 2);
+        });
+
+        const rmse = Math.sqrt(sse / n);
+        const r2 = 1 - (sse / sst);
+        
+        rmseEl.textContent = rmse.toFixed(3);
+        r2El.textContent = r2.toFixed(3);
+
+        return { points: data, line: line };
+    }
+    
+    function updateRegressionChart() {
+        const data = generateRegressionData(regressionNoise);
+        const ctx = document.getElementById('regressionChart').getContext('2d');
+        if (regressionChart) {
+            regressionChart.data.datasets[0].data = data.points;
+            regressionChart.data.datasets[1].data = data.line;
+            regressionChart.update();
+        } else {
+             regressionChart = new Chart(ctx, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Данные',
+                        data: data.points,
+                        backgroundColor: 'rgba(8, 145, 178, 0.6)'
+                    }, {
+                        label: 'Линия регрессии',
+                        data: data.line,
+                        type: 'line',
+                        borderColor: 'rgb(244, 63, 94)',
+                        backgroundColor: 'rgba(244, 63, 94, 0.5)',
+                        fill: false,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                }
+            });
+        }
+    }
+
+    regressionBtn.addEventListener('click', () => {
+        regressionNoise += 0.5;
+        if (regressionNoise > 3) regressionNoise = 0.5;
+        updateRegressionChart();
+    });
+    updateRegressionChart();
+
+});
+</script>
+
+</body>
+</html>
