@@ -131,12 +131,33 @@ $$
 
 ## ⚙️ Настройка среды  
 
+### Авторизоваться на сервере [Jupyter-Hub](https://jupyter.org/hub) по адресу [Jupyter-Hub-ИИСТ-НПИ](http://193.124.118.93:8000/)
+
+![Авторизация](../images/autorization.png)
+
+### Создать новую вкладку символом **+**
+
+![Создание новой вкладки](../images/new_window_create.png)
+
+### Выбрать тип новой вкладки -- Terminal 
+
+![Создание вкладки Terminal](../images/terminal_window_create.png)
+
+### Работать в новой вкладки вида
+
+![Владка Terminal](../images/basic_window.png)
+
+
+### Ввести последовательно (каждую строку отдельно):
+
 ```bash
 mkdir image_classification_metrics
 cd image_classification_metrics
 python3.10 -m venv venv
 source venv/bin/activate
-pip install torch torchvision scikit-learn matplotlib
+pip install --upgrade pip
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+pip install scikit-learn matplotlib
 ```
 
 ---
@@ -194,7 +215,7 @@ plt.ylabel("Истинный класс")
 plt.savefig("confusion_matrix.png", dpi=150)
 ```
 
-Сохранить текст `Ctrl+X` и выйти из редактора *nano* `Ctrl+O`
+Сохранить текст `Ctrl+X` - `Enter` и выйти из редактора *nano* `Ctrl+O`
 
 Запуск из командной строки:
 
@@ -204,7 +225,14 @@ python3 lab1_1.py
 
 ```
 
-Убедиться в создании файлов с изображением Confusion Matrix.
+Убедиться в создании файлов с изображением Confusion Matrix. Это можно сделать, используя правую часть окна:
+- Двойным нажатие на имени каталога переходим в каталог `image_classification_metrics`
+
+![Результат выполнения lanb1_1.py](../images/result_lab1_1.png)
+
+- Открываем файл `confusion_matrix.png` двойным нажатием
+
+![Confusion_Matrix lanb1_1.py](../images/confusion_matrix_lab1_1.png)
 
 
 ### 📌 Задание для самостоятельной работы #1
@@ -352,17 +380,24 @@ test_ds  = datasets.CIFAR10('.', train=False, download=False, transform=transfor
 train_loader = DataLoader(train_ds, batch_size=128, shuffle=True)
 test_loader  = DataLoader(test_ds,  batch_size=256, shuffle=False)
 
-# 3. Обучение (1 эпоха для примера)
+# 3. Обучение (2 эпохи для примера)
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model, model.to(device)
+model = SimpleCNN()
+model.to(device)
 criterion = nn.CrossEntropyLoss()
 opt = optim.Adam(model.parameters(), lr=1e-3)
-model.train()
-for imgs, labels in train_loader:
-    imgs, labels = imgs.to(device), labels.to(device)
-    pred = model(imgs)
-    loss = criterion(pred, labels)
-    opt.zero_grad(); loss.backward(); opt.step()
+num_epochs = 3
+for epoch in range(num_epochs):
+  model.train()
+  running_loss = 0.0
+  for imgs, labels in train_loader:
+      imgs, labels = imgs.to(device), labels.to(device)
+      pred = model(imgs)
+      loss = criterion(pred, labels)
+      opt.zero_grad(); loss.backward(); opt.step()
+      running_loss += loss.item()
+  avg_loss = running_loss / len(train_loader)
+  print(f"Epoch {epoch+1}/{num_epochs} — Loss: {avg_loss:.4f}")
 
 # 4. Тестирование и сбор предсказаний
 model.eval()
@@ -400,6 +435,8 @@ plt.colorbar()
 plt.savefig("cnn_cifar10_cm.png", dpi=150)
 
 # 7. ROC и AUC для трёх классов
+plt.clf()       # Очистить текущую фигуру
+plt.close()     # Закрыть текущую фигуру
 for cls in [0,1,2]:
     fpr, tpr, _ = roc_curve((y_true==cls).astype(int), y_prob[:,cls])
     roc_auc = auc(fpr, tpr)
