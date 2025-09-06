@@ -221,7 +221,11 @@ python run_inference.py \
   --pred-mask-dir   ./data/PennFudanPed/pred_masks \
   --pred-boxes-json ./data/PennFudanPed/pred_boxes.json
 ```
-После этого в каталоге `/home/jupyter/segmentation_detection_lab/data/PennFudanPed/pred_masks` были созданы PNG-маски, а в `pred_boxes.json` — структура
+После этого в каталоге `/home/jupyter/segmentation_detection_lab/data/PennFudanPed/pred_masks` были созданы PNG-маски:
+  ![Оригинальное изображение](../images/Orig_seg.png) 
+  ![Результат сегментации](../images/Seg_seg.png) 
+
+а в `pred_boxes.json` — структура
 
 ```json
 
