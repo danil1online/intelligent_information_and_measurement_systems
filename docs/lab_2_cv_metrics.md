@@ -569,7 +569,6 @@ import cv2
 from torch.utils.data import Dataset, DataLoader
 from torchvision.io import read_image
 
-# pip install segmentation-models-pytorch
 import segmentation_models_pytorch as smp
 
 import math
@@ -597,8 +596,6 @@ class PennFudanSegDataset(Dataset):
             if fname.lower().endswith(".png")
                and os.path.isfile(os.path.join(self.mask_dir, fname))
         ])
-        #self.imgs  = sorted(os.listdir(self.img_dir))
-        #self.masks = sorted(os.listdir(self.mask_dir))
 
     def __len__(self):
         return len(self.imgs)
