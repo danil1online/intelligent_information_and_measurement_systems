@@ -16,11 +16,18 @@
 
 ## 📁 Материалы и методы
 - Язык программирования – Python 3.10.
-- Основные библиотеки: TensorFlow/Keras, scikit-learn, matplotlib, numpy, pillow, scipy
+- Основные библиотеки:
+  - [TensorFlow/Keras](https://www.tensorflow.org/?hl=ru),
+  - [scikit-learn](https://scikit-learn.org/stable/),
+  - [matplotlib](https://matplotlib.org/),
+  - [numpy](https://numpy.org/),
+  - [pillow](https://github.com/python-pillow/Pillow),
+  - [scipy](https://scipy.org/)
+  - [imageio](https://github.com/imageio/imageio)
 - Датасет: [MNIST](https://www.kaggle.com/datasets/hojjatk/mnist-dataset):
-1. 60 000 обучающих и 10 000 тестовых изображений размером 28×28
-2. Грейскейл, один канал
-3. Удобен для быстрой тренировки VAE и начальной оценки метрик
+  - 60 000 обучающих и 10 000 тестовых изображений размером 28×28
+  - Грейскейл, один канал
+  - Удобен для быстрой тренировки VAE и начальной оценки метрик
 
 ---
 
@@ -94,29 +101,34 @@ import matplotlib.pyplot as plt
 from tensorflow.keras import layers, Model
 import tensorflow as tf
 
+# Построение энкодера
+# Энкодер преобразует изображение в латентное представление с параметрами распределения: z_mean и z_log_var
 def build_encoder(latent_dim=2):
-    inputs = layers.Input(shape=(28,28,1))
-    x = layers.Flatten()(inputs)
-    x = layers.Dense(128, activation='relu')(x)
-    z_mean    = layers.Dense(latent_dim, name='z_mean')(x)
-    z_log_var = layers.Dense(latent_dim, name='z_log_var')(x)
+    inputs = layers.Input(shape=(28,28,1)) # Входное изображение 28x28x1
+    x = layers.Flatten()(inputs)           # Преобразование в вектор
+    x = layers.Dense(128, activation='relu')(x) # Полносвязный слой
+    z_mean    = layers.Dense(latent_dim, name='z_mean')(x) # Среднее распределения
+    z_log_var = layers.Dense(latent_dim, name='z_log_var')(x) # Логарифм дисперсии
 
     def sampling(args):
         mean, log_var = args
-        eps = tf.random.normal(shape=tf.shape(mean))
-        return mean + tf.exp(0.5 * log_var) * eps
+        eps = tf.random.normal(shape=tf.shape(mean)) # Случайный шум
+        return mean + tf.exp(0.5 * log_var) * eps # Репараметризация
 
-    z = layers.Lambda(sampling)([z_mean, z_log_var])
+    z = layers.Lambda(sampling)([z_mean, z_log_var]) # Сэмплирование латентного вектора
     return Model(inputs, [z_mean, z_log_var, z], name='encoder')
 
+# Построение декодера
+# Декодер восстанавливает изображение из латентного пространства.
 def build_decoder(latent_dim=2):
-    latent_inputs = layers.Input(shape=(latent_dim,))
-    x = layers.Dense(128, activation='relu')(latent_inputs)
-    x = layers.Dense(28*28, activation='sigmoid')(x)
-    outputs = layers.Reshape((28,28,1))(x)
+    latent_inputs = layers.Input(shape=(latent_dim,)) # Вход — латентный вектор
+    x = layers.Dense(128, activation='relu')(latent_inputs) # Полносвязный слой
+    x = layers.Dense(28*28, activation='sigmoid')(x) # Выходной слой
+    outputs = layers.Reshape((28,28,1))(x) # Возврат к форме изображения
     return Model(latent_inputs, outputs, name='decoder')
 
 class VAE(Model):
+    # Инициализация модели VAE с энкодером и декодером. Также создаются трекеры для отслеживания потерь.
     def __init__(self, encoder, decoder, **kwargs):
         super().__init__(**kwargs)
         self.encoder = encoder
@@ -125,31 +137,39 @@ class VAE(Model):
         self.recon_loss_tracker  = tf.keras.metrics.Mean(name="recon_loss")
         self.kl_loss_tracker     = tf.keras.metrics.Mean(name="kl_loss")
 
+    # Определение метрик, которые будут логироваться во время обучения.
     @property
     def metrics(self):
         return [self.loss_tracker,
                 self.recon_loss_tracker,
                 self.kl_loss_tracker]
 
+    # Компиляция модели с заданным оптимизатором.
     def compile(self, optimizer, **kwargs):
         super().compile(**kwargs)
         self.optimizer = optimizer
 
+    # Шаг обучения
+    # Проверка, если data — кортеж, извлекается только изображение.
     def train_step(self, data):
         if isinstance(data, tuple):
             data = data[0]
 
+        # Прямой проход: кодирование и декодирование.
         with tf.GradientTape() as tape:
             z_mean, z_log_var, z = self.encoder(data)
             reconstruction      = self.decoder(z)
 
+            # Преобразование изображений в векторы для расчёта потерь.
             x_flat   = tf.reshape(data,        [-1, 28*28])
             rec_flat = tf.reshape(reconstruction, [-1, 28*28])
 
+            # Вычисление потерь реконструкции (насколько хорошо декодер восстановил изображение).
             recon_loss = tf.reduce_mean(
                 tf.keras.losses.binary_crossentropy(x_flat, rec_flat)
             ) * 28 * 28
 
+            # Вычисление KL-дивергенции — насколько распределение z отличается от нормального.
             kl_loss = -0.5 * tf.reduce_mean(
                 tf.reduce_sum(1 + z_log_var
                               - tf.square(z_mean)
@@ -157,11 +177,14 @@ class VAE(Model):
                               axis=1)
             )
 
+            # Общая потеря — сумма реконструкции и KL.
             total_loss = recon_loss + kl_loss
 
+        # Обновление весов модели.
         grads = tape.gradient(total_loss, self.trainable_weights)
         self.optimizer.apply_gradients(zip(grads, self.trainable_weights))
 
+        # Обновление метрик и возврат значений потерь.
         self.loss_tracker.update_state(total_loss)
         self.recon_loss_tracker.update_state(recon_loss)
         self.kl_loss_tracker.update_state(kl_loss)
@@ -195,7 +218,7 @@ def main(epochs=5, output_dir='output'):
     os.makedirs(output_dir, exist_ok=True)
     decoder.save(os.path.join(output_dir, 'decoder.h5'))
     print(f"Decoder saved to {output_dir}/decoder.h5")
-    # 5. Генерация и сохранение примеров
+    # 5. Визуализация и сохранение примеров
     z_sample = np.random.normal(size=(16, 2))
     x_decoded = decoder.predict(z_sample)
     plt.figure(figsize=(4,4))
@@ -320,6 +343,7 @@ from scipy.linalg import sqrtm
 from PIL import Image
 import glob
 
+# Загружает изображения из указанной директории, преобразует их в нужный формат и размер (299×299 — входной размер для InceptionV3).
 def load_images(path, size=(299,299), max_images=1000):
     files = glob.glob(os.path.join(path, '*.png'))[:max_images]
     imgs = []
@@ -328,11 +352,13 @@ def load_images(path, size=(299,299), max_images=1000):
         imgs.append(np.array(img))
     return np.array(imgs)
 
+# Вычисление Inception Score. Inception Score измеряет разнообразие и реалистичность изображений на основе предсказаний модели.
 def calculate_inception_score(images, splits=10):
     model = InceptionV3(include_top=True, weights='imagenet', pooling='avg')
     images = preprocess_input(images.astype('float32'))
     preds = model.predict(images)
     p_y = np.mean(preds, axis=0)
+    # Чем выше IS, тем более реалистичны и разнообразны изображения.
     scores = []
     N = preds.shape[0] // splits
     for i in range(splits):
@@ -341,10 +367,12 @@ def calculate_inception_score(images, splits=10):
         scores.append(np.exp(np.sum(kl, axis=1).mean()))
     return float(np.mean(scores)), float(np.std(scores))
 
+# Вычисление FID (Frechet Inception Distance). FID сравнивает статистику признаков реальных и сгенерированных изображений.
 def calculate_fid(real, gen):
     model = InceptionV3(include_top=False, pooling='avg')
     act1 = model.predict(preprocess_input(real.astype('float32')))
     act2 = model.predict(preprocess_input(gen.astype('float32')))
+    # Чем ниже FID, тем ближе сгенерированные изображения к реальным.
     mu1, sigma1 = act1.mean(axis=0), np.cov(act1, rowvar=False)
     mu2, sigma2 = act2.mean(axis=0), np.cov(act2, rowvar=False)
     covmean = sqrtm(sigma1.dot(sigma2))
@@ -353,18 +381,18 @@ def calculate_fid(real, gen):
     return np.sum((mu1 - mu2)**2) + np.trace(sigma1 + sigma2 - 2*covmean)
 
 def main(real_dir, gen_dir):
-    real = load_images(real_dir)
-    gen = load_images(gen_dir)
-    is_mean, is_std = calculate_inception_score(gen)
-    fid_value = calculate_fid(real, gen)
+    real = load_images(real_dir) # Загрузка реальных изображений
+    gen = load_images(gen_dir) # Загрузка сгенерированных изображений
+    is_mean, is_std = calculate_inception_score(gen) # Вычисление IS
+    fid_value = calculate_fid(real, gen) # Вычисление FID
     print(f'Inception Score: {is_mean:.3f} ± {is_std:.3f}')
     print(f'FID: {fid_value:.3f}')
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument('--real', type=str, required=True)
-    parser.add_argument('--gen', type=str, required=True)
+    parser.add_argument('--real', type=str, required=True) # Путь к реальным изображениям
+    parser.add_argument('--gen', type=str, required=True) # Путь к сгенерированным изображениям
     args = parser.parse_args()
     main(args.real, args.gen)
 
