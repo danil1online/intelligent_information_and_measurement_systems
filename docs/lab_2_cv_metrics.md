@@ -17,7 +17,10 @@
 
 ## 📁 Материалы и методы
 - Язык программирования – Python 3.10.
-- Основные библиотеки – scikit-learn, matplotlib, PyTorch (torch, torchvision).
+- Основные библиотеки:
+  -  [scikit-learn](https://scikit-learn.org/),
+  -  [matplotlib](https://matplotlib.org/),
+  -  [PyTorch (torch, torchvision)](https://pytorch.org/).
 - Датасет – [Penn-Fudan Pedestrian Detection and Segmentation (170 изображений).](https://www.kaggle.com/datasets/psvishnu/pennfudan-database-for-pedestrian-detection-zip)
 
 Датасет Penn-Fudan Dataset содержит 170 цветных изображений пешеходов и соответствующие маски сегментации (PNG) и аннотации прямоугольных рамок (PNG).
