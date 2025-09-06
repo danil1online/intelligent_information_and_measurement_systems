@@ -20,7 +20,8 @@
 - Основные библиотеки:
   -  [scikit-learn](https://scikit-learn.org/),
   -  [matplotlib](https://matplotlib.org/),
-  -  [PyTorch (torch, torchvision)](https://pytorch.org/).
+  -  [PyTorch (torch, torchvision)](https://pytorch.org/),
+  -  [pydensecrf](https://github.com/lucasb-eyer/pydensecrf.git).
 - Датасет – [Penn-Fudan Pedestrian Detection and Segmentation (170 изображений).](https://www.kaggle.com/datasets/psvishnu/pennfudan-database-for-pedestrian-detection-zip)
 
 Датасет Penn-Fudan Dataset содержит 170 цветных изображений пешеходов и соответствующие маски сегментации (PNG) и аннотации прямоугольных рамок (PNG).
