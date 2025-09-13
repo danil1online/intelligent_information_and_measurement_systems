@@ -150,7 +150,7 @@ $$
 
 ![Создание вкладки Terminal](../images/terminal_window_create.png)
 
-### Работать в новой вкладки вида
+### Работать в новой вкладке вида
 
 ![Владка Terminal](../images/basic_window.png)
 
