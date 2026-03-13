@@ -138,7 +138,7 @@ $$
 
 ## ⚙️ Настройка среды  
 
-### Авторизоваться на сервере [Jupyter-Hub](https://jupyter.org/hub) по адресу [Jupyter-Hub-ИИСТ-НПИ](http://195.133.13.56:8000/)
+### Авторизоваться на сервере [Jupyter-Hub](https://jupyter.org/hub) по адресу [Jupyter-Hub-ИИСТ-НПИ](http://89.110.116.79:7998/)
 
 ![Авторизация](../images/autorization.png)
 
